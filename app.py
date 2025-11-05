@@ -23,7 +23,6 @@ Original file is located at
 #
 # Works on desktop and mobile (browser webcam). For real-time streaming we use streamlit-webrtc.
 
-pip install mediapipe
 
 import math
 import time
@@ -31,11 +30,7 @@ import collections
 from dataclasses import dataclass, field
 from typing import Deque, Dict, List, Optional, Tuple
 
-pip install av
 
-pip install streamlit
-
-pip install streamlit-webrtc
 
 import av
 import cv2
@@ -45,7 +40,6 @@ from streamlit_webrtc import webrtc_streamer, WebRtcMode, VideoProcessorBase
 
 import mediapipe as mp
 
-pip install PyQt6
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
