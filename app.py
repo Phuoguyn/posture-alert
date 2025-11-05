@@ -1,7 +1,10 @@
 import streamlit as st, sys, platform
-st.set_page_config(page_title="Posture Alert", layout="centered")
+st.set_page_config(page_title="Posture Alert", layout="wide")
 st.info(f"✅ App booted • Python {sys.version.split()[0]} • {platform.system()}")
-st.write("If you see this, Streamlit finished loading the script.")
+
+# TEMP: prove the app renders; remove this after you see the page load.
+st.success("Smoke test page rendered. Next, we’ll load dependencies.")
+st.stop()
 
 """ML_project_complete_after_change
 
