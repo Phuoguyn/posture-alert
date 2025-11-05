@@ -1,6 +1,7 @@
 streamlit
 streamlit-webrtc
-mediapipe
+mediapipe==0.10.14
+protobuf<4
 opencv-python-headless
 numpy
 pandas
