@@ -4,5 +4,5 @@ mediapipe==0.10.14
 opencv-python-headless==4.9.0.80
 numpy==1.26.4
 pandas
-av==12.1.0                 # ⬅️ wheel exists for py311; no compile needed
+av==14.0.1                 # ✅ compatible with aiortc / streamlit-webrtc
 protobuf>=4.25.3,<5
