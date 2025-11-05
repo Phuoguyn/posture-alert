@@ -470,5 +470,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-!jupyter nbconvert --to script ML_project_posture_alert.ipynb
 
