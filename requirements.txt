@@ -1,7 +1,4 @@
-# Streamlit core
 streamlit>=1.51,<1.52
-
-# Realtime webcam
 streamlit-webrtc==0.63.11
 aiortc==1.14.0
 av==14.0.1
@@ -9,14 +6,11 @@ pyee
 pylibsrtp
 pyopenssl
 
-# Vision stack (headless builds avoid libGL)
-opencv-contrib-python-headless==4.9.0.80
+opencv-contrib-python-headless==4.9.0.80   # <-- headless; DO NOT include opencv-python or opencv-contrib-python
 
-# Pose
 mediapipe==0.10.14
 protobuf>=4.25.3,<5
 
-# Numerics / data
 numpy==1.26.4
 pandas==2.3.3
 pyarrow==21.0.0
