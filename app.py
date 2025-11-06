@@ -1,3 +1,35 @@
+# -----------------------------------------------------------
+# app.py — Typing Posture Alert (Streamlit + WebRTC + MediaPipe)
+# -----------------------------------------------------------
+
+# --- SAFE TOP SECTION ---
+import os, sys, platform, streamlit as st
+
+st.set_page_config(page_title="Typing Posture Alert", page_icon="🧍", layout="wide")
+st.success(f"✅ App booted • Python {sys.version.split()[0]} • {platform.system()}")
+
+ENABLE_WEBRTC = True  # set to False if you want to temporarily disable the camera
+
+# Lazily test camera-related dependencies
+def webcam_deps_ok():
+    if not ENABLE_WEBRTC:
+        return False, "Webcam disabled by config."
+    try:
+        import cv2  # noqa: F401
+        import av   # noqa: F401
+        import mediapipe as mp  # noqa: F401
+        from streamlit_webrtc import webrtc_streamer, WebRtcMode, VideoProcessorBase  # noqa: F401
+        return True, "OK"
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
+
+have_cam, cam_msg = webcam_deps_ok()
+if not have_cam:
+    st.warning(f"⚠️ Webcam not available: {cam_msg}\n"
+               "Tip: ensure you're using `opencv-contrib-python-headless` "
+               "in `requirements.txt` to avoid `libGL.so.1` errors.")
+
+
 # app.py — Typing Posture Alert (Streamlit + streamlit-webrtc + MediaPipe)
 import sys, platform, time, collections
 from dataclasses import dataclass, field
