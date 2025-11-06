@@ -2,12 +2,8 @@ streamlit>=1.51,<1.52
 streamlit-webrtc==0.63.11
 aiortc==1.14.0
 av==14.0.1
+opencv-python-headless==4.9.0.80
+numpy==1.26.4
 pylibsrtp
 pyee
 pyopenssl
-mediapipe==0.10.14
-opencv-python-headless==4.9.0.80
-numpy==1.26.4
-pandas==2.3.3
-protobuf>=4.25.3,<5
-pyarrow==21.0.0
