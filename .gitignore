@@ -1,3 +1,3 @@
 git add runtime.txt requirements.txt app.py
-git commit -m "Smoke deploy: pin py3.11 and remove mediapipe"
+git commit -m "Full deploy: pin Py3.11 + mediapipe stack"
 git push
