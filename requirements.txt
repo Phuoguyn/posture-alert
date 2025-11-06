@@ -1,21 +1,23 @@
-# Streamlit (works on Python 3.11 in Cloud)
+# Streamlit core
 streamlit>=1.51,<1.52
 
-# WebRTC stack (versions compatible together)
+# Realtime webcam
 streamlit-webrtc==0.63.11
 aiortc==1.14.0
 av==14.0.1
-pylibsrtp
 pyee
+pylibsrtp
 pyopenssl
 
-# Vision stack
-mediapipe==0.10.14
-opencv-contrib-python-headless==4.9.0.80   # headless! avoid libGL
-# (no opencv-python / no opencv-contrib-python)
+# Vision stack (headless builds avoid libGL)
+opencv-contrib-python-headless==4.9.0.80
 
-# Numerics
+# Pose
+mediapipe==0.10.14
+protobuf>=4.25.3,<5
+
+# Numerics / data
 numpy==1.26.4
 pandas==2.3.3
-protobuf>=4.25.3,<5
 pyarrow==21.0.0
+scipy==1.16.3
