@@ -1,8 +1,14 @@
 streamlit==1.32.0
 streamlit-webrtc==0.63.11
+
+# Core CV stack
 mediapipe==0.10.14
 opencv-python-headless==4.9.0.80
+av==14.0.1
+
+# Numerics
 numpy==1.26.4
-pandas
-av==14.0.1                 # ✅ compatible with aiortc / streamlit-webrtc
+pandas==2.3.3
+
+# Mediapipe requires protobuf >=4.25.3,<5
 protobuf>=4.25.3,<5
