@@ -1,0 +1,3 @@
+git add requirements.txt runtime.txt app.py
+git commit -m "Fix dependency versions and add runtime.txt"
+git push
