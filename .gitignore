@@ -1,3 +1,3 @@
 git add app.py
-git commit -m "Phase 2: import checks (webcam still off)"
+git commit -m "Phase 3: full UI, webcam disabled"
 git push
