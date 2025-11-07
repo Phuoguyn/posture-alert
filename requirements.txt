@@ -1,19 +1,19 @@
-# Streamlit Cloud-safe deps for webcam + MediaPipe
+# === Streamlit base ===
 streamlit>=1.51,<1.52
 streamlit-webrtc==0.63.11
 
-# WebRTC stack
-aiortc==1.14.0
-av==14.0.1
-pylibsrtp==1.0.0
-pyee==13.0.0
-pyopenssl==25.3.0
-
-# Computer vision
+# === Computer vision stack (with correct headless OpenCV) ===
+opencv-contrib-python-headless==4.9.0.80
 mediapipe==0.10.14
-opencv-python-headless==4.9.0.80     # <-- headless! no opencv-python / opencv-contrib-python
 
-# Numerics / data
+# === WebRTC + dependencies (auto-managed by streamlit-webrtc) ===
+av>=14.0.1
+aiortc>=1.7.0
+pylibsrtp>=0.9.0
+pyee>=11.0.0
+pyopenssl>=23.0.0
+
+# === Data + numerics ===
 numpy==1.26.4
 pandas>=2.2,<2.4
 pyarrow==21.0.0
