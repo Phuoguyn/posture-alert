@@ -3,7 +3,7 @@ streamlit>=1.51,<1.52
 streamlit-webrtc==0.63.11
 
 # === Computer vision stack (with correct headless OpenCV) ===
-opencv-contrib-python-headless==4.9.0.80
+#opencv-contrib-python-headless==4.9.0.80
 mediapipe==0.10.14
 
 # === WebRTC + dependencies (auto-managed by streamlit-webrtc) ===
