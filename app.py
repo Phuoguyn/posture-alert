@@ -1,7 +1,15 @@
 # -----------------------------------------------------------
-# Typing Posture Alert (Streamlit) - Minimal working posture detector
+# Typing Posture Alert (Streamlit) - Stable posture detector
 # -----------------------------------------------------------
-import sys, platform, streamlit as st
+import sys
+import platform
+import time
+import collections
+from dataclasses import dataclass, field
+from typing import Deque
+
+import streamlit as st
+import numpy as np
 
 st.set_page_config(page_title="Typing Posture Alert", page_icon="🧍", layout="wide")
 st.success(f"✅ App booted • Python {sys.version.split()[0]} • {platform.system()}")
@@ -27,28 +35,19 @@ if not have_cam:
         "\nTip: use `opencv-contrib-python-headless` (not `opencv-python`) to avoid `libGL.so.1`."
     )
 
-# ------------------------------------------------------------------
-# Imports
-# ------------------------------------------------------------------
-import time, collections
-from dataclasses import dataclass, field
-from typing import Deque
-
-import numpy as np
-
+# Import heavy deps only if available
 if have_cam:
     import av
     import cv2
     import mediapipe as mp
     from streamlit_webrtc import webrtc_streamer, WebRtcMode, VideoProcessorBase
 
-# ------------------- App state & helpers -------------------
-NECK_TILT_MAX_DEFAULT = 25.0         # degrees
-BACK_ANGLE_MIN_DEFAULT = 150.0       # degrees (closer to 180 = straighter)
-HEAD_PITCH_MAX_DEFAULT = 20.0        # degrees
+# ------------------- Config & State -------------------
+NECK_TILT_MAX_DEFAULT = 25.0        # deg
+BACK_ANGLE_MIN_DEFAULT = 150.0      # deg
+HEAD_PITCH_MAX_DEFAULT = 20.0       # deg
 SMOOTH_WINDOW = 30
 BAD_POSTURE_PERSIST_SEC = 60.0
-MOBILE_MAX_WIDTH = 720
 
 def ss_get(k, v):
     if k not in st.session_state:
@@ -69,7 +68,6 @@ ss_get("thresholds", {
 ss_get("stats", {
     "start_ts": None,
     "last_good_ts": None,
-    "last_move_reminder": None,
     "bad_streak_start": None,
     "timeline": [],
     "good_frames": 0,
@@ -82,9 +80,8 @@ ss_get("sensitivity", 1.0)
 @dataclass
 class PostureState:
     hist: Deque[int] = field(default_factory=lambda: collections.deque(maxlen=SMOOTH_WINDOW))
-    last_frame_ts: float = 0.0
 
-# ------------- posture math helpers (simple but effective) -------------
+# ------------- Helpers -------------
 def angle_between(v1, v2):
     v1 = np.array(v1, dtype=float)
     v2 = np.array(v2, dtype=float)
@@ -100,10 +97,9 @@ def update_stats(is_good: bool):
     now = time.time()
     if stats["start_ts"] is None:
         stats["start_ts"] = now
-
     t = now - stats["start_ts"]
-    stats["timeline"].append((t, 1 if is_good else 0))
 
+    stats["timeline"].append((t, 1 if is_good else 0))
     if is_good:
         stats["good_frames"] += 1
         stats["last_good_ts"] = now
@@ -126,75 +122,86 @@ if have_cam:
             self.styles = mp.solutions.drawing_styles
 
         def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
-            img = frame.to_ndarray(format="bgr24")
+            # SUPER IMPORTANT: never crash here or camera dies
+            try:
+                img = frame.to_ndarray(format="bgr24")
 
-            # Mirror if enabled
-            if st.session_state.get("mirror_video", True):
-                img = cv2.flip(img, 1)
+                # Mirror if user chose so (defensive: use get)
+                if st.session_state.get("mirror_video", True):
+                    img = cv2.flip(img, 1)
 
-            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            results = self.pose.process(rgb)
+                rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                results = self.pose.process(rgb)
 
-            is_good = True  # default assume ok
+                is_good = True  # default
 
-            if results.pose_landmarks:
-                h, w, _ = img.shape
-                lm = results.pose_landmarks.landmark
+                if results.pose_landmarks:
+                    h, w, _ = img.shape
+                    lm = results.pose_landmarks.landmark
 
-                # Key points (using left side; mirrored already if needed)
-                def pt(i):
-                    return np.array([lm[i].x * w, lm[i].y * h])
+                    def pt(i):
+                        return np.array([lm[i].x * w, lm[i].y * h])
 
-                shoulder = pt(mp.solutions.pose.PoseLandmark.LEFT_SHOULDER)
-                hip = pt(mp.solutions.pose.PoseLandmark.LEFT_HIP)
-                ear = pt(mp.solutions.pose.PoseLandmark.LEFT_EAR)
-                nose = pt(mp.solutions.pose.PoseLandmark.NOSE)
+                    shoulder = pt(mp.solutions.pose.PoseLandmark.LEFT_SHOULDER)
+                    hip = pt(mp.solutions.pose.PoseLandmark.LEFT_HIP)
+                    ear = pt(mp.solutions.pose.PoseLandmark.LEFT_EAR)
+                    nose = pt(mp.solutions.pose.PoseLandmark.NOSE)
 
-                # Back angle: hip -> shoulder vs vertical
-                vertical = np.array([0, -1])
-                back_vec = shoulder - hip
-                back_angle = 180.0 - angle_between(back_vec, vertical)  # ~180 when straight
+                    vertical = np.array([0, -1])
 
-                # Neck tilt: shoulder -> ear vs vertical
-                neck_vec = ear - shoulder
-                neck_tilt = angle_between(neck_vec, vertical)
+                    back_vec = shoulder - hip
+                    neck_vec = ear - shoulder
+                    head_vec = nose - shoulder
 
-                # Head pitch (rough): shoulder -> nose vs vertical
-                head_vec = nose - shoulder
-                head_pitch = angle_between(head_vec, vertical)
+                    # Back more vertical → better (angle vs vertical)
+                    back_angle = 180.0 - angle_between(back_vec, vertical)
+                    neck_tilt = angle_between(neck_vec, vertical)
+                    head_pitch = angle_between(head_vec, vertical)
 
-                th = st.session_state["thresholds"]
-                sens = float(st.session_state.get("sensitivity", 1.0))
+                    th = st.session_state.get("thresholds", {
+                        "NECK_TILT_MAX": NECK_TILT_MAX_DEFAULT,
+                        "BACK_ANGLE_MIN": BACK_ANGLE_MIN_DEFAULT,
+                        "HEAD_PITCH_MAX": HEAD_PITCH_MAX_DEFAULT,
+                    })
+                    sens = float(st.session_state.get("sensitivity", 1.0))
 
-                neck_ok = neck_tilt <= th["NECK_TILT_MAX"] / sens
-                back_ok = back_angle >= th["BACK_ANGLE_MIN"] * sens / 180.0 * 180.0
-                head_ok = head_pitch <= th["HEAD_PITCH_MAX"] / sens
+                    neck_ok = neck_tilt <= th["NECK_TILT_MAX"] / sens
+                    back_ok = back_angle >= th["BACK_ANGLE_MIN"] * sens / 180.0 * 180.0
+                    head_ok = head_pitch <= th["HEAD_PITCH_MAX"] / sens
 
-                is_good = neck_ok and back_ok and head_ok
+                    is_good = neck_ok and back_ok and head_ok
 
-                # smooth
-                self.state.hist.append(1 if is_good else 0)
-                smoothed = 1 if (sum(self.state.hist) / max(1, len(self.state.hist))) >= 0.5 else 0
-                is_good = bool(smoothed)
+                    # smooth: majority of last N frames
+                    self.state.hist.append(1 if is_good else 0)
+                    avg = sum(self.state.hist) / max(1, len(self.state.hist))
+                    is_good = bool(avg >= 0.5)
 
-                # Draw landmarks & a simple status text
-                if st.session_state.get("show_landmarks", True):
-                    self.draw.draw_landmarks(
-                        img,
-                        results.pose_landmarks,
-                        mp.solutions.pose.POSE_CONNECTIONS,
-                        landmark_drawing_spec=self.styles.get_default_pose_landmarks_style(),
-                    )
+                    # Draw landmarks
+                    if st.session_state.get("show_landmarks", True):
+                        self.draw.draw_landmarks(
+                            img,
+                            results.pose_landmarks,
+                            mp.solutions.pose.POSE_CONNECTIONS,
+                            landmark_drawing_spec=self.styles.get_default_pose_landmarks_style(),
+                        )
 
-                status_text = "GOOD" if is_good else "SLOUCH"
-                color = (0, 180, 0) if is_good else (0, 0, 255)
-                cv2.putText(img, status_text, (10, 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                    # Overlay status
+                    label = "GOOD" if is_good else "SLOUCH"
+                    color = (0, 200, 0) if is_good else (0, 0, 255)
+                    cv2.putText(img, label, (10, 30),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
 
-            # Update global stats (safe enough for this simple app)
-            update_stats(is_good)
+                # Update global stats (wrapped to avoid crash if session_state unavailable)
+                try:
+                    update_stats(is_good)
+                except Exception:
+                    pass
 
-            return av.VideoFrame.from_ndarray(img, format="bgr24")
+                return av.VideoFrame.from_ndarray(img, format="bgr24")
+
+            except Exception:
+                # If anything goes wrong, just return original frame so webcam keeps working
+                return frame
 
 # ----------------------------- UI sections -----------------------------
 def consent_gate():
@@ -218,7 +225,7 @@ def sidebar_info():
                 ss_set("thresholds", {
                     "NECK_TILT_MAX": 18.0,
                     "BACK_ANGLE_MIN": 155.0,
-                    "HEAD_PITCH_MAX": 15.0
+                    "HEAD_PITCH_MAX": 15.0,
                 })
                 ss_set("calibrated", True)
         else:
@@ -248,41 +255,41 @@ def monitor_section():
                 key="posture-monitor",
                 mode=WebRtcMode.SENDRECV,
                 media_stream_constraints={"video": True, "audio": False},
-                video_processor_factory=VideoProcessor,   # 🔴 THIS MAKES DETECTION RUN
+                video_processor_factory=VideoProcessor,
             )
         else:
-            with st.expander("Webcam unavailable (running in demo mode)", expanded=True):
-                st.warning("Camera stack not loaded. Once dependencies resolve, the webcam section will appear here.")
+            st.warning("Running in demo mode (no webcam dependencies).")
 
     with colR:
         st.subheader("Analytics")
         stats = st.session_state["stats"]
 
-        # Basic posture %
         total = max(1, stats["good_frames"] + stats["bad_frames"])
         pct = 100.0 * stats["good_frames"] / total
         st.metric("Posture % Good", f"{pct:.1f}%")
 
-        # Plot timeline if any
-        import pandas as pd
         if stats["timeline"]:
+            import pandas as pd
             df = pd.DataFrame(stats["timeline"], columns=["t_sec", "good"])
             df["minutes"] = df["t_sec"] / 60.0
             df.set_index("minutes", inplace=True)
             st.line_chart(df["good"], height=160, use_container_width=True)
             st.caption("Timeline: 1 = good posture, 0 = slouching.")
 
-        # Alert if bad posture persists
+        # Long slouch alert
         if stats["bad_streak_start"] is not None:
             bad_secs = time.time() - stats["bad_streak_start"]
             if bad_secs >= BAD_POSTURE_PERSIST_SEC:
-                st.error("⚠️ You've had poor posture for a while. Time to straighten up and take a break!")
+                st.error("⚠️ You've had poor posture for a while. Straighten up and take a quick break!")
 
-        st.divider()
         if st.button("Reset analytics"):
             ss_set("stats", {
-                "start_ts": None, "last_good_ts": None, "last_move_reminder": None,
-                "bad_streak_start": None, "timeline": [], "good_frames": 0, "bad_frames": 0,
+                "start_ts": None,
+                "last_good_ts": None,
+                "bad_streak_start": None,
+                "timeline": [],
+                "good_frames": 0,
+                "bad_frames": 0,
             })
             st.toast("Analytics reset.", icon="🔄")
             st.rerun()
@@ -292,7 +299,7 @@ def main():
     if not st.session_state["consented"]:
         consent_gate()
         return
-    st.caption("UI loaded. Webcam will appear once dependencies and permissions are OK.")
+    st.caption("UI loaded. If you don’t see a camera prompt, check the warning above.")
     sidebar_info()
     monitor_section()
 
