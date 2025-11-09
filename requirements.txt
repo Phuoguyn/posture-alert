@@ -18,3 +18,4 @@ numpy==1.26.4
 pandas>=2.2,<2.4
 pyarrow==21.0.0
 protobuf>=4.25.3,<5
+ 
