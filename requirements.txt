@@ -1,10 +1,20 @@
-streamlit==1.37.0
-streamlit-webrtc==0.47.6
+# === Streamlit base ===
+streamlit>=1.51,<1.52
+streamlit-webrtc==0.63.11
 
+# === Computer vision stack (with correct headless OpenCV) ===
 opencv-contrib-python-headless==4.9.0.80
-
 mediapipe==0.10.14
-av==10.0.0
 
+# === WebRTC + dependencies (auto-managed by streamlit-webrtc) ===
+av>=14.0.1
+aiortc>=1.7.0
+pylibsrtp>=0.9.0
+pyee>=11.0.0
+pyopenssl>=23.0.0
+
+# === Data + numerics ===
 numpy==1.26.4
-pandas==2.2.2
+pandas>=2.2,<2.4
+pyarrow==21.0.0
+protobuf>=4.25.3,<5
