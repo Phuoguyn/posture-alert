@@ -29,6 +29,8 @@ def webcam_deps_ok():
         return False, f"{type(e).__name__}: {e}", None
 
 have_cam, cam_msg, _ = webcam_deps_ok()
+st.write("Webcam deps check:", have_cam, cam_msg)
+
 if not have_cam:
     st.warning(
         "⚠️ Webcam not available: " + cam_msg +
