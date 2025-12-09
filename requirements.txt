@@ -2,10 +2,18 @@
 streamlit>=1.51,<1.52
 streamlit-webrtc==0.63.11
 
-# === Posture detection ===
+# === Computer vision (use NON-CONTRIB headless OpenCV) ===
+opencv-python-headless==4.10.0.84
 mediapipe==0.10.14
 
-# === Data / numerics ===
+# === WebRTC (auto-managed by streamlit-webrtc) ===
+av>=14.0.1
+aiortc>=1.7.0
+pyee>=11.0.0
+pylibsrtp>=0.9.0
+pyopenssl>=23.0.0
+
+# === Data + numerics ===
 numpy==1.26.4
 pandas>=2.0
 protobuf>=4.24.0,<5
