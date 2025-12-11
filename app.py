@@ -27,8 +27,8 @@ except Exception as e:
     st.stop()  # stop the app here so you SEE the real reason
 
 # -------- 2. Simple posture state + math --------
-NECK_TILT_MAX = 25.0  # degrees
-SMOOTH_WINDOW = 30
+NECK_TILT_MAX = 35.0  # degrees
+SMOOTH_WINDOW = 10
 
 @dataclass
 class PostureState:
